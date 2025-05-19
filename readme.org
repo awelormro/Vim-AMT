@@ -1,0 +1,11 @@
+* Absurdly minimal tools
+
+  A vim dashboard alternative for some necessities, in a non-fancy interface,
+  but it works, written in vimscript, vim9script and lua.
+
+** Features:
+
+   The following tools are included:
+
+   - Oldfiles searcher.
+   - Buffer manager.
