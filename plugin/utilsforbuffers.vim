@@ -1,69 +1,15 @@
 " vim: set nospell:
 " vim: set foldmethod=marker:
 
-" Main AMT function {{{
-function! AMT_launch(kind) abort
+command! AMToldfiles call AMT_launch('oldfiles')
+
+
+function! AMT_launch(kind) abort " Main AMT function {{{
   if a:kind == 'oldfiles'
     call AMT_start_Oldfiles()
   endif
 endfunction " }}}
-
-function! AMT_start_Oldfiles() abort " Open buffer for Oldfiles {{{
-  call AMT_start_buffer('Search: ')
-  call AMT_generate_mappings()
-  call cursor(1, col('$'))
-  let b:counter = 0
-  call AMT_fill_lines(v:oldfiles, 0)
-endfunction " }}}
-
-function! AMT_fill_lines(list_values, pos) " {{{
-  let len_vals = len(a:list_values)
-  let vals_from_pos = a:pos + 9
-  echo len_vals
-  let b:arguments = a:list_values
-  if line('$') > 1
-    execute ':2,'.string(line('$')).'delete'
-  elseif len_vals < 10
-    call append(1, a:list_values)
-  elseif vals_from_pos <= len_vals - 1
-    call append(1, a:list_values[a:pos: a:pos + 9])
-  else
-    call append(1, a:list_values[a:pos:])
-  endif
-endfunction " }}}
-
-function! AMT_Change_pos_up(list_values) abort " {{{
-  let cursor_pos = search('>', 'n')
-  if cursor_pos == 2
-    call AMT_fill_lines(a:list_values, len(a:list_values))
-    call setline(2, '>'getline(2))
-  else
-    call setline(cursor_pos, getline(cursor_pos)[1:])
-    call setline(cursor_pos + 1, '>'.getline(cursor_pos + 1))
-  endif
-endfunction " }}}
-
-function! AMT_search_results(list_values, line_search, string_start) abort " {{{
-  let line_content = getline(a:line_search)
-  let searched_result = line_content[len(a:string_start) - 1:]
-  let results = matchfuzzy(a:list_values, searched_result)
-  call AMT_fill_lines(results, 0)
-endfunction " }}}
-
-function! AMT_generate_mappings() abort " {{{
-  inoremap <buffer><expr> <left> line('.') == 1 && col('.') > 8 ? '<left>' : ''
-  nnoremap <buffer><expr> <left> line('.') == 1 && col('.') > 8 ? '<left>' : ''
-  nnoremap <buffer><expr> <Backspace> line('.') == 1 && col('.') > 8 ? '<Backspace>' : ''
-  inoremap <buffer><expr> <Backspace> line('.') == 1 && col('.') > 8 ? '<Backspace>' : ''
-  nnoremap <buffer><expr> <Del> line('.') == 1 && col('.') > 8 ? '<Del>' : ''
-  inoremap <buffer><expr> <Del> line('.') == 1 && col('.') > 8 ? '<Del>' : ''
-  nnoremap <buffer><expr> h line('.') == 1 && col('.') > 8 ? '<left>' : ''
-  nnoremap <buffer> q :q!<CR>
-  nnoremap <buffer> <C-q> <Esc>:q!
-  echo 'mappings generation'
-endfunction " }}}
-
-function! AMT_start_buffer(first_line) abort " Open the buffer below with general mappings and settings {{{
+function! AMT_start_buffer(first_line, list_values, ) abort " Open the buffer below with general mappings and settings {{{
   let split_setting = &splitbelow
   if split_setting == 0
     execute 'set splitbelow'
@@ -73,18 +19,130 @@ function! AMT_start_buffer(first_line) abort " Open the buffer below with genera
   if split_setting == 0
     execute 'set nosplitbelow'
   endif
-  setlocal filetype=amtsearch
-  setlocal modifiable
-  setlocal nonumber norelativenumber
-  setlocal buftype=nofile bufhidden=wipe  noswapfile nospell
+  setlocal filetype=amtsearch modifiable nonumber norelativenumber buftype=nofile bufhidden=wipe  noswapfile nospell
   call setline(1, a:first_line)
-endfunction
-" }}}
-
-command! AMToldfiles call AMT_launch('oldfiles')
-
-
-
-
-" autocmd TextChangedI *.amtsearch if exists('*AMTChangeSearchOldfiles') && line('.') == 1 | call AMTChangeSearchOldfiles() | endif
-
+  let b:main_values = a:list_values
+  let b:search_values = b:main_values
+  let b:change_values = len(b:search_values) > 10 ? 1 : 0
+  let list_values = b:change_values == 1 ? b:main_values[0 : 9] : b:main_values
+  let b:counter = 1
+  call append(1, list_values)
+  call cursor(1, col('$'))
+  call setline(2, '->'.getline(2))
+endfunction " }}}
+function! AMT_start_Oldfiles() "{{{
+  call AMT_start_buffer('Search: ', v:oldfiles)
+  call AMT_start_default_mappings()
+  inoremap <buffer> <Up> <Esc>:call AMT_Cursor_Up()<CR>A
+  inoremap <buffer> <Down> <Esc>:call AMT_Cursor_Down()<CR>A
+  nnoremap <buffer> <Up> :call AMT_Cursor_Up()<CR>$
+  nnoremap <buffer> <Down> :call AMT_Cursor_Down()<CR>$
+  inoremap <buffer> <CR> <Esc>:call AMT_Execute_Action('e')<CR>
+  nnoremap <buffer> <CR> :call AMT_Execute_Action('e')<CR>
+  autocmd TextChangedI *.amtsearch if line('.') == 1 | call AMT_Change_Search(9) | endif
+endfunction " }}}
+function! AMT_start_default_mappings() "{{{
+  inoremap <buffer><expr> <Backspace> col('.') > 9 && line('.') == 1 ? '<Backspace>' : ''
+  inoremap <buffer><expr> <Left> col('.') > 9 ? '<Left>' : ''
+  inoremap <buffer><expr> <Del> col('.') != col('$') && line('.') == 1 && col('.') > 9 ? '<Del>' : ''
+  nnoremap <buffer> q :q!<CR>
+  inoremap <buffer> <C-q> <Esc>:q!<CR>
+endfunction " }}}
+function! AMT_Cursor_Up() " {{{
+  let idx_search = search('->', 'n')
+  if idx_search == 2 && b:counter == 1 && b:change_values == 1
+    :2,11delete
+    let b:counter = len(b:search_values)
+    call append(1, b:search_values[-1])
+    call setline(2, '->'.getline(2))
+    call cursor(1, col('.'))
+    return
+  endif
+  if idx_search == 2 && b:change_values == 0
+    let b:counter = len(b:search_values)
+    call setline(2, getline(2)[2:])
+    call setline(line('$'), '->'.getline('$'))
+    call cursor(1, col('.'))
+    return
+  endif
+  if idx_search == 2 && line('$') < 11
+    let b:counter = b:counter - 1
+    call append(1, b:search_values[b:counter - 1])
+    call setline(2, '->'.getline(2))
+    call setline(3, getline(3)[2:])
+    call cursor(1, col('.'))
+    return
+  endif
+  if idx_search == 2
+    let b:counter = b:counter - 1
+    call append(1, b:search_values[b:counter - 1])
+    call setline(2, '->'.getline(2))
+    call setline(3, getline(3)[2:])
+    call cursor(1, col('.'))
+    return
+  endif
+  call setline(idx_search - 1, '->'.getline(idx_search - 1))
+  call setline(idx_search, getline(idx_search)[2 :])
+  let b:counter = b:counter - 1
+  call cursor(1, col('.'))
+endfunction " }}}
+function! AMT_Cursor_Down() " {{{
+  let idx_search = search('->', 'n')
+  if len(b:search_values) == b:counter && b:change_values == 0
+    call setline(2, '->' . getline(2))
+    call setline(line('$'), getline('$')[2:])
+    let b:counter = 1
+    call cursor(1, col('$'))
+    return
+  endif
+  if idx_search == 11 && b:change_values == 1
+    :2delete
+    call append(10, b:search_values[b:counter - 1])
+    call setline(11, '->'.getline(11))
+    call setline(10, getline(10)[2 :])
+    let b:counter = b:counter + 1
+    call cursor(1, col('$'))
+    return
+  endif
+  if line('$') < 10
+    echo 'Will delete and substitute'
+    execute ':2,'.string(line('$')).'delete'
+    let b:counter = 1
+    call append(1, b:search_values[0:9])
+    call setline(2, '->'.getline(2))
+    call cursor(1, col('$'))
+    return
+  endif
+  call setline(idx_search + 1, '->'.getline(idx_search + 1))
+  call setline(idx_search, getline(idx_search)[2 :])
+  let b:counter = b:counter + 1
+  call cursor(1, col('.'))
+endfunction " }}}
+function! AMT_Change_Search(len_ignore) abort " {{{
+  let line_result = getline(1)[a:len_ignore :]
+  echo line_result
+  if len(line_result) == 0
+    let b:change_values = b:main_values
+    let b:change_values = len(b:search_values) > 10 ? 1 : 0
+    let list_values = b:change_values == 1 ? b:search_values[0 : 9] : b:search_values
+    let b:counter = 1
+    call append(1, list_values)
+    call cursor(1, col('$'))
+    call setline(2, '->'.getline(2))
+    return
+  endif
+  let search_result = matchfuzzy(copy(b:main_values), line_result)
+  let b:search_values = search_result
+  execute '2,'.string(line('$')).'delete'
+  let b:change_values = len(b:search_values) > 10 ? 1 : 0
+  let list_values = b:change_values == 1 ? b:search_values[0 : 9] : b:search_values
+  let b:counter = 1
+  call append(1, list_values)
+  call cursor(1, col('$'))
+  call setline(2, '->'.getline(2))
+endfunction " }}}
+function! AMT_Execute_Action(command) " {{{
+  let search_result = getline(search('->', 'n'))[2:]
+  :q!
+  execute a:command . ' ' . search_result
+endfunction " }}}
