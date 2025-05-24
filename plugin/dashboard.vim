@@ -66,7 +66,7 @@ function! StartAMTDashboard() " {{{
   %center
   " No modifications to this buffer
   setlocal nomodifiable nomodified
-  echo asciiaux
+  " echo asciiaux
   " nnoremap <buffer><silent> e :enew<CR>
   "nnoremap <buffer><silent> i :enew <bar> startinsert<CR>
   "nnoremap <buffer><silent> o :enew <bar> startinsert<CR>
@@ -78,4 +78,4 @@ endfunction
 command! AMTDash call StartAMTDashboard()
 autocmd VimEnter * AMTDash
 " }}}
-" Run after "doing all the startup stuff"
+" Run after doing all the startup stuff

@@ -1,6 +1,6 @@
-" vim: set nospell:
-" vim: set foldmethod=marker:
-"
+if has('vim9script')
+  finish
+endif
 
 " AMT commands   {{{
 command! AMToldfiles call AMT_start_Oldfiles()
@@ -138,11 +138,6 @@ function! AMT_Execute_Action(command) " {{{
   :q!
   execute a:command . ' ' . search_result
 endfunction " }}}
-function! AMT_start_session(path_sessions) " {{{
-  let search_result = getline(search('->', 'n'))[2:]
-  :q!
-  execute   'so '. expand( a:path_sessions ) . '/' . search_result
-endfunction " }}}
 function! AMT_start_buffer(first_line, list_values, ) abort " Open the buffer below with general mappings and settings {{{
   let split_setting = &splitbelow
   if split_setting == 0
@@ -164,6 +159,18 @@ function! AMT_start_buffer(first_line, list_values, ) abort " Open the buffer be
   call cursor(1, col('$'))
   call setline(2, '->'.getline(2))
 endfunction " }}}
+function! Generate_nerd_font_symbols() abort "{{{
+  if !exists('g:amt_nerdfonts_keys')
+    call nerdpickers#read_nerd_glyphs()
+  endif
+  let g:amt_nerdfonts_keys = keys(g:main_fonts)
+  let g:amt_symbols = []
+  let g:amt_nerd_display = []
+  for [key, symbol] in items(g:main_fonts)
+    call add(g:amt_symbols, symbol["char"])
+    call add(g:amt_nerd_display, symbol["char"] .. " : " .. key)
+  endfor
+endfunction "}}}
 function! AMT_save_session() " {{{
   "   save session if not loaded
   let g:amt_session_folder = resolve(expand(g:amt_session_folder))
@@ -198,6 +205,11 @@ function! AMT_save_session() " {{{
   endif
 endfunction
 " }}}
+function! AMT_start_session(path_sessions) " {{{
+  let search_result = getline(search('->', 'n'))[2:]
+  :q!
+  execute   'so '. expand( a:path_sessions ) . '/' . search_result
+endfunction " }}}
 " }}}
 " AMT call functions   {{{
 function! AMT_Close_session() " {{{
@@ -285,7 +297,7 @@ function! AMT_start_sessions() " {{{
   endif " }}}
   " 󰕲  Generation of list files with .vim generated{{{
   let completion_list = filter(readdir(expand(g:amt_session_folder)), 'v:val =~ "\.vim$"' )
-  echo completion_list
+  " echo completion_list
   " }}}
   "  start filter keys and commands {{{
   call AMT_start_buffer('Search: ', completion_list)
@@ -311,7 +323,7 @@ function! AMT_delete_sessions() " {{{
   endif " }}}
   " 󰕲  Generation of list files with .vim generated{{{
   let completion_list = filter(readdir(expand(g:amt_session_folder)), 'v:val =~ "\.vim$"' )
-  echo completion_list
+  " echo completion_list
   " }}}
   "  start filter keys and commands {{{
   call AMT_start_buffer('Search: ', completion_list)

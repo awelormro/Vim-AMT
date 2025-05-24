@@ -9,3 +9,6 @@
 
    - Oldfiles searcher.
    - Buffer manager.
+   - Colorscheme selector.
+   - Session manager
+   - Simple dashboard  
