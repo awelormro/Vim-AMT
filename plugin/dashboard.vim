@@ -8,7 +8,7 @@ function! StartAMTDashboard() " {{{
     return
   endif
 
-  " Start a new buffer ...
+  " 󰾴 Start a new buffer ... {{{
   enew
 
   let asciiaux = [
@@ -22,10 +22,12 @@ function! StartAMTDashboard() " {{{
         \ '\__|  \__|\__|     \__|   \__|       \_/    \______|\__|     \__|',
         \ ]
 
-  " ... and set some options for it
+  " }}}
+  " 󰭆 ... and set some options for it {{{
   setlocal bufhidden=wipe buftype=nofile filetype=dash nobuflisted nocursorcolumn nocursorline nolist nospell nonumber noswapfile norelativenumber
 
-  " Now we can just write to the buffer, whatever you want.
+  " }}}
+  "  Now we can just write to the buffer, whatever you want. {{{
   call append('$', "")
   let vimsize=winwidth('%') 
   exe 'setlocal tw='.vimsize
@@ -37,31 +39,42 @@ function! StartAMTDashboard() " {{{
   else
     let asciiheader = g:amt_dashboard_ascii
   endif
+  call setline(1, "{{{")
   for lineascii in asciiheader
-    call append('$', '-='.lineascii.'-=')
+    " call append('$', '-= '.lineascii.' -=')
+    call append('$', lineascii)
   endfor
+  call append('$', "}}}")
+  " }}}
+  "  Add some commands and keymaps {{{
   call append('$', '-')
   call append('$', 'commands:')
   if !exists('g:amt_dashboard_keys')
     let commandkeys = [
-          \ {'map':'e','command':':enew<CR>',                  'desc':'- create new file           -'},
-          \ {'map':'i','command':':enew <bar> startinsert<CR>','desc':'- new file With insert mode -'},
-          \ {'map':'o','command':':enew <bar> startinsert<CR>','desc':'- new file With insert mode -'},
-          \ {'map':'bf','command':':BrowseOldFi<CR>',          'desc':'-Explore Oldfiles          -'},
-          \ {'map':'fm','command':':Lexplore<CR>',             'desc':'-File Browser-             -'},
-          \ {'map':'q','command':':quit<CR>',                  'desc':'- Exit vim                  -'}
+          \ {'map':'e','command':':enew<CR>',                  'desc':'-󰈔 create new file           -'},
+          \ {'map':'i','command':':enew <bar> startinsert<CR>','desc':'- new file With insert mode -'},
+          \ {'map':'o','command':':enew <bar> startinsert<CR>','desc':'- new file With insert mode -'},
+          \ {'map':'bf','command':':AMTOldfiles<CR>',          'desc':'- Explore Oldfiles          -'},
+          \ {'map':'bs','command':':AMTStartSession<CR>',      'desc':'- Explore Sessions          -'},
+          \ {'map':'fm','command':':Lexplore<CR>',             'desc':'- File Browser              -'},
+          \ {'map':'q','command':':quit<CR>',                  'desc':'-󰩈 Exit vim                  -'}
           \]
   else
     let commandkeys = g:amt_dashboard_keys
   endif
   let i=0
   call append('$', '  ')
-  while i<len(commandkeys)
+  while i < len(commandkeys)
     exe 'nnoremap <buffer><silent> '.commandkeys[i]['map'].' '.commandkeys[i]['command']
-    " call append('$', '  ')
-    call append('$', commandkeys[i]['map'].': '.commandkeys[i]['desc'])
-    let i=i+1
+    if len(commandkeys[i]['map']) == 1
+      call append('$', commandkeys[i]['map'].' : '.commandkeys[i]['desc'])
+    else
+      call append('$', commandkeys[i]['map'].': '.commandkeys[i]['desc'])
+    endif
+    let i = i + 1
   endwhile
+  " }}}
+  " Center the dashboard {{{
   exe 'normal \%center'
   %center
   " No modifications to this buffer
@@ -73,9 +86,12 @@ function! StartAMTDashboard() " {{{
   "nnoremap <buffer><silent> q :quit<CR>
 
   " When we go to insert mode start a new buffer, and start insert
+  "
+  " }}}
 endfunction
 
+" }}}
 command! AMTDash call StartAMTDashboard()
 autocmd VimEnter * AMTDash
-" }}}
 " Run after doing all the startup stuff
+

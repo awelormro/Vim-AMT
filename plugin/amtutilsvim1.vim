@@ -227,7 +227,7 @@ def AMT_insert_text_nerd() # {{{
 enddef # }}}
 # }}}
 # AMT functions   {{{
-def AMT_insert_nerd_glyph() # {{{
+def AMT_insert_nerd_glyph() # Select nerdfont glyph  {{{
   AMT_Nerd_Glyphs()
   AMT_Open_browser(g:amt_nerd_display, 'Search: ')
   AMT_start_default_mappings(9, '')
@@ -237,11 +237,11 @@ def AMT_insert_nerd_glyph() # {{{
   nnoremap <buffer> <CR> :AMTInsertNerd<CR>:echo ' '<CR>
   # }}}"
 enddef # }}}
-def AMT_Open_Oldfiles() # {{{
+def AMT_Open_Oldfiles() # Previous files 󰋚 {{{
   AMT_Open_browser(v:oldfiles, 'Search: ')
   AMT_start_default_mappings(9, 'e')
 enddef # }}}
-def AMT_Select_Colorscheme() # {{{
+def AMT_Select_Colorscheme() # Select colorscheme  {{{
   var completion_list = getcompletion('', 'color')
   AMT_Open_browser(completion_list, 'Search: ')
   AMT_start_default_mappings(9, 'colorscheme')
@@ -254,35 +254,38 @@ def AMT_Select_Buffer() # {{{
 enddef # }}}
 #  Session management {{{
 def AMT_start_sessions() # {{{
-  # var session_name_prev = v:this_session
-  # var v:this_session = ""
   #   Verify if session folder exists {{{
   if !exists("g:amt_session_folder")
     g:amt_session_folder = '~/sessions'
   endif
-  g:amt_session_folder = resolve(expand(g:amt_session_folder))
   # }}}
   #   Folder creation if not generated {{{
   if !isdirectory(expand(g:amt_session_folder))
-    if input('Session folder not created, want to create? y/n') == 'y'
+    if input('Session folder not created, want to create?\n y/n') == 'y'
       mkdir(expand(g:amt_session_folder))
     endif
   endif # }}}
-  # echo 'Generated folder'
   # 󰕲  Generation of list files with .vim generated{{{
-  var completion_list = filter(readdir(expand(g:amt_session_folder)), 'v:val =~ "\.vim$"' )
-  # echo completion_list
-  # echo 'Generated list'
+  # var completion_list = filter(readdir(expand(g:amt_session_folder)), 'v:val =~ "\.vim$"' )
+  if g:amt_session_folder[-1] != '/'
+    g:amt_session_folder = g:amt_session_folder .. '/'
+  endif
+  var completion_list = getcompletion('so ' .. g:amt_session_folder, 'cmdline')
   # }}}
   #  start filter keys and commands {{{
   AMT_Open_browser(completion_list, 'Search: ')
   AMT_start_default_mappings(9, '')
   # echo 'Generated mappings'
-  command -buffer AMTStartSes AMT_start_session(g:amt_session_folder)
+  # command -buffer AMTStartSes AMT_start_session(g:amt_session_folder)
+  command! -buffer AMTStartSes Other_start_session()
   inoremap <buffer> <CR> <Esc>:AMTStartSes<CR>
   nnoremap <buffer> <CR> :AMTStartSes<CR>
   # echo 'Success'
   # }}}
+enddef # }}}
+def Other_start_session() # {{{
+  var session = getline(search('->', 'n'))[2 :]
+  silent! execute 'so ' .. session
 enddef # }}}
 def AMT_delete_sessions() # {{{
   #   Verify if session folder exists {{{
@@ -331,9 +334,9 @@ def AMT_save_session() # {{{
     if save_session == 'y'
       save_session = input('Session name: ')
       var prev_pos = getcwd()
-      execute 'cd'
+      silent! execute 'cd'
       execute 'mks!' .. expand(g:amt_session_folder) .. '/' .. save_session
-      execute 'cd ' .. prev_pos
+      silent! execute 'cd ' .. prev_pos
       return
     else
       echo 'Not a valid option'
