@@ -51,13 +51,13 @@ function! StartAMTDashboard() " {{{
   call append('$', 'commands:')
   if !exists('g:amt_dashboard_keys')
     let commandkeys = [
-          \ {'map':'e','command':':enew<CR>',                  'desc':'-󰈔 create new file           -'},
-          \ {'map':'i','command':':enew <bar> startinsert<CR>','desc':'- new file With insert mode -'},
-          \ {'map':'o','command':':enew <bar> startinsert<CR>','desc':'- new file With insert mode -'},
-          \ {'map':'bf','command':':AMTOldfiles<CR>',          'desc':'- Explore Oldfiles          -'},
-          \ {'map':'bs','command':':AMTStartSession<CR>',      'desc':'- Explore Sessions          -'},
-          \ {'map':'fm','command':':Lexplore<CR>',             'desc':'- File Browser              -'},
-          \ {'map':'q','command':':quit<CR>',                  'desc':'-󰩈 Exit vim                  -'}
+          \ {'map':'e','command':':enew<CR>',                  'desc':'{[ 󰈔 create new file           ]}'},
+          \ {'map':'i','command':':enew <bar> startinsert<CR>','desc':'{[  new file With insert mode ]}'},
+          \ {'map':'o','command':':enew <bar> startinsert<CR>','desc':'{[  new file With insert mode ]}'},
+          \ {'map':'bf','command':':AMTOldfiles<CR>',          'desc':'{[  Explore Oldfiles          ]}'},
+          \ {'map':'bs','command':':AMTStartSession<CR>',      'desc':'{[  Explore Sessions          ]}'},
+          \ {'map':'fm','command':':Lexplore<CR>',             'desc':'{[  File Browser              ]}'},
+          \ {'map':'q','command':':quit<CR>',                  'desc':'{[ 󰩈 Exit vim                  ]}'}
           \]
   else
     let commandkeys = g:amt_dashboard_keys
@@ -67,9 +67,9 @@ function! StartAMTDashboard() " {{{
   while i < len(commandkeys)
     exe 'nnoremap <buffer><silent> '.commandkeys[i]['map'].' '.commandkeys[i]['command']
     if len(commandkeys[i]['map']) == 1
-      call append('$', commandkeys[i]['map'].' : '.commandkeys[i]['desc'])
+      call append('$', "[[ ".commandkeys[i]['map'].' ]]  : '.commandkeys[i]['desc'])
     else
-      call append('$', commandkeys[i]['map'].': '.commandkeys[i]['desc'])
+      call append('$', '[[ '.commandkeys[i]['map'].' ]] : '.commandkeys[i]['desc'])
     endif
     let i = i + 1
   endwhile

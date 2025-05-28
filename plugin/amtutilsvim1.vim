@@ -7,7 +7,7 @@ vim9script
 import autoload "nerdpickers.vim" as nerdpick
 
 # AMT commands   {{{
-command! AMTOlfiles           AMT_Open_Oldfiles()
+command! AMTOldfiles           AMT_Open_Oldfiles()
 command! AMTColors            AMT_Select_Colorscheme()
 command! AMTBuffers           AMT_Select_Buffer()
 command! AMTNerd              AMT_insert_nerd_glyph()
