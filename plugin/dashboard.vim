@@ -119,8 +119,6 @@ function! Dash_Move_cursor_up() abort "{{{
     call cursor(line('.') - 1, col('.'))
   endif
 endfunction " }}}
-
-
 function! Dash_Move_cursor_down() abort "{{{
   let idx_row = line('.')
   if idx_row == line('$')
@@ -129,8 +127,6 @@ function! Dash_Move_cursor_down() abort "{{{
     call cursor(line('.') + 1, col('.'))
   endif
 endfunction "}}}
-
-
 function! Dash_Execute_Command() abort " {{{
   let command_line = line('.')
   let command_execute = g:amt_dashboard_keys[command_line - b:dash_command_start]['command']

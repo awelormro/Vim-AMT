@@ -1,7 +1,6 @@
 if has('vim9script')
   finish
 endif
-
 " AMT commands   {{{
 command! AMToldfiles call AMT_start_Oldfiles()
 command! AMTColors call AMT_start_colors()
