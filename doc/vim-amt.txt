@@ -1,0 +1,47 @@
+*Vim-AMT*       Absurdly minimal tools 
+
+INDEX
+
+*1.* Introduction    |vim-amt-intro|
+*2.* Features        |vim-amt-features|
+*3.* Core            |vim-amt-core|
+*3.* Searchers       |vim-amt-searchers|
+*4.* Dashboard       |vim-amt-dash|
+
+===============================================================================
+
+
+*1.* Introduction                                *vim-amt-intro*
+
+
+CORE
+
+Vim-AMT is a collection of absurdly minimal tools using only vim-referred
+features, as the languages to program and adaptation, can be used with four
+different Cores: vimscript, vim9script, python and lua. Vim9script and lua are 
+by default in vim and neovim respectivally. If you want to activate another core,
+set the variable `g:vim_amt_core` with the respective core to use.
+
+VARIABLE DESIGN
+
+Vim-AMT has different tools to approach, each one has to be defined in the
+dictionary `g:amt_setup`, can configure each all of the features. 
+
+===============================================================================
+
+*2.* Features                                    *vim-amt-features*
+
+Vim-AMT has the following features:
+
+- A search engine using an empty buffer and the local matchfuzzy function.
+- A dashboard with the capability for custom keyboard mappings, redefinable.
+
+SEARCHERS
+
+Vim-AMT use an empty buffer with a filetype called amtsearch, includes by
+default:
+
+- Old Files explorer.
+- Colorscheme selector.
+- Session manager.
+
