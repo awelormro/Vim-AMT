@@ -1,7 +1,6 @@
 import vim
 
 
-# Starters to commands and mappings {{{
 def start():
     AMT_Finders_commands()
     AMT_Finders_mappings()
@@ -15,8 +14,6 @@ def AMT_Finders_mappings():
     pass
 
 
-# }}}
-# AMT Core {{{
 def amt_open_buffer(all_values, title):
     """
     open the buffer with all the specifications and generate the mappings
@@ -37,42 +34,131 @@ def amt_open_buffer(all_values, title):
     vim.command("set filetype=amtsearch")
     # }}}
     vim.command(":1,$delete")
+    vim.command("setlocal bufhidden=wipe")
     b = vim.current.buffer
     bvar = vim.current.buffer.vars
     b[0] = title
     bvar["main_values"] = all_values
-    if len(bvar["main_values"]) > 10:
-        bvar["search_values"] = bvar["main_values"][:10]
-        print("more than 10 values, only show first ten values")
-        b.append(list(bvar["search_values"]))
-    else:
-        b.append(list(bvar["search_values"]))
+    bvar["search_values"] = all_values
+    bvar["title_len"] = len(title)
+    amt_reload_buffer()
     print("values shown")
+
+
+def amt_reload_buffer():
+    b = vim.current.buffer
+    bvar = vim.current.buffer.vars
+    if len(b[:]) > 1:
+        vim.command(":2,$delete")
+    if len(bvar["search_values"]) > 10:
+        b.append(bvar["search_values"][:10])
+    else:
+        b.append(bvar["search_values"])
     b[1] = "->" + b[1]
     bvar["counter"] = 1
+    bvar["updating_line1"] = b[0]
 
 
 def amt_cursor_down():
     search_val = vim.Function("search")("^->")
     b = vim.current.buffer
     bvar = vim.current.buffer.vars
-    len_vals = len(b[:])
-    if search_val == len_vals:
-        vim.command(":2delete")
-        vim.current.buffer[-1] = vim.current.buffer[-1][2:]
-        vim.current.buffer.append(0)
+    if bvar["counter"] == len(bvar["search_values"]):
+        amt_reload_buffer()
+        vim.Function("cursor")(1, vim.Function("col")("$"))
+        return
+    if search_val == 11:
+        b.append("->" + bvar["search_values"][bvar["counter"]].decode("utf-8"))
+        b[10] = b[10][2:]
+        del b[1]
+        bvar["counter"] += 1
+        vim.Function("cursor")(1, vim.Function("col")("$"))
+        return
+    b[search_val - 1] = b[search_val - 1][2:]
+    b[search_val] = "->" + b[search_val]
+    bvar["counter"] += 1
+    vim.Function("cursor")(1, vim.Function("col")("$"))
 
 
 def amt_cursor_up():
-    pass
+    search_val = vim.Function("search")("^->")
+    b = vim.current.buffer
+    bvar = vim.current.buffer.vars
+    if (search_val == 2 and len(bvar["search_values"]) <= 10):
+        b[1] = b[1][2:]
+        b[-1] = "->" + b[-1]
+        bvar["counter"] = len(bvar["search_values"])
+        vim.Function("cursor")(1, vim.Function("col")("$"))
+        return
+    if search_val == 2 and bvar["counter"] == 1:
+        vim.command(":2,$delete")
+        b.append(bvar["search_values"][-1])
+        b[-1] = "->" + b[-1]
+        bvar["counter"] = len(bvar["search_values"])
+        vim.Function("cursor")(1, vim.Function("col")("$"))
+        return
+    if search_val == 2 and len(b[:]) < 11:
+        bvar["counter"] -= 1
+        b.append(bvar["search_values"][bvar["counter"] - 1], 1)
+        b[1] = "->" + b[1]
+        b[2] = b[2][2:]
+        vim.Function("cursor")(1, vim.Function("col")("$"))
+        return
+    if search_val == 2:
+        bvar["counter"] -= 1
+        vim.command(":$delete")
+        b[1] = b[1][2:]
+        b.append(bvar["search_values"][bvar["counter"] - 1], 1)
+        b[1] = "->" + b[1]
+        vim.Function("cursor")(1, vim.Function("col")("$"))
+        return
+    b[search_val - 1] = b[search_val - 1][2:]
+    b[search_val - 2] = "->" + b[search_val - 2]
+    bvar["counter"] -= 1
+    vim.Function("cursor")(1, vim.Function("col")("$"))
 
 
-def amt_start_buffer():
-    pass
+def amt_execute(action):
+    search_val = vim.Function("search")("^->")
+    b = vim.current.buffer
+    sel = b[search_val - 1][2:]
+    vim.command("q!")
+    vim.command(action[0] + " " + sel + " " + action[1])
 
 
-# }}}
-# AMT functions for commands {{{
+def amt_reload_search():
+    b = vim.current.buffer
+    bv = vim.current.buffer.vars
+    if b[0] == bv["updating_line1"].decode("utf-8"):
+        return
+    bv["updating_line1"] = b[0]
+    search_expression = b[0][bv["title_len"]:].strip()
+    bv["search_values"] = vim.Function("matchfuzzy")(bv["main_values"], search_expression, {"limit": 200})
+    vim.command("2,$delete")
+    if len(bv["search_values"]) >= 10:
+        b.append(list(bv["search_values"]))
+    else:
+        b.append(list(bv["search_values"][:10]))
+    b[1] = "->" + b[1]
+    bv["counter"] = 1
+    vim.Function("cursor")(1, vim.Function("col")("$"))
+
+
 def AMT_Oldfiles():
-    amt_open_buffer(vim.vvars['oldfiles'], "Search")
-# }}}
+    vc = vim.command
+    vim.current.buffer.vars["updating_line1"] = ""
+    amt_open_buffer(vim.vvars['oldfiles'], "Search: ")
+    vc("command! -buffer AMTCursorUp py3 amtfinders.amt_cursor_up()")
+    vc("command! -buffer AMTCursorDown py3 amtfinders.amt_cursor_down()")
+    vc("command! -buffer AMTExecute py3 amtfinders.amt_execute(['e ', ''])")
+    vc("command! -buffer AMTReloadSearch py3 amtfinders.amt_reload_search()")
+    vc("inoremap <buffer><expr> <Backspace> col('.') > 9 && line('.') == 1 ? '<Backspace>' : ''")
+    vc("inoremap <buffer><expr> <Left> col('.') > 9 ? '<Left>' : ''")
+    vc("inoremap <buffer><expr> <Del> col('.') != col('$') && line('.') == 1 && col('.') > 9 ? '<Del>' : ''")
+    vc("nnoremap <buffer> q :q!<CR>")
+    vc("nnoremap <buffer><silent> <Up> :AMTCursorUp<CR>")
+    vc("nnoremap <buffer><silent> <Down> :AMTCursorDown<CR>")
+    vc("nnoremap <buffer><silent> k :AMTCursorUp<CR>")
+    vc("nnoremap <buffer><silent> j :AMTCursorDown<CR>")
+    vc("nnoremap <buffer><silent> <CR> :AMTExecute<CR>")
+    vc("autocmd TextChangedI *.amtsearch if line('.') == 1 && b:updating_line1 != getline(1) | execute 'AMTReloadSearch' | endif")

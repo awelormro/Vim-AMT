@@ -4,9 +4,8 @@ if exists('g:amt_started')
   finish
 endif
 
-
-if has('nvim') && !exists('g:amt_core')
-  let g:amt_core = 'lua'
+if has('nvim')
+  finish
 endif
 
 if g:amt_core == "lua"

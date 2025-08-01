@@ -1,3 +1,7 @@
+if has('nvim')
+  finish
+endif
+
 if !has('vim9script')
   finish
 endif

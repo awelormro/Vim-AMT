@@ -1,6 +1,11 @@
 local M = {}
 function M.starter()
   vim.g.amt_core_lua_started = 1
-  print('lua core started')
 end
+
+function M.first_function()
+  print("Very first lua module")
+  vim.g.amt_variable_generated = true
+end
+
 return M
