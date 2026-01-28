@@ -1,6 +1,5 @@
 import vim
 
-
 def generate_mapping(kind, mapping, action, opts):
     a = kind  # Check if normal, insert, etc.
     args = ''
@@ -29,8 +28,11 @@ def generate_mapping(kind, mapping, action, opts):
     vim.command(command)
 
 
-def generate_command():
-    pass
+def generate_command(command, action, extras):
+    a = command
+    b = action
+    c = extras
+    vim.command(a + ' ' + b + ' ' + c)
 
 
 def import_command_library():

@@ -9,10 +9,15 @@ if has('nvim')
 endif
 
 if g:amt_core == "lua"
-  lua require('starter.start').starter()
+lua << EOF
+require('starter.start').starter()
+EOF
 elseif g:amt_core == "python"
-  py3 import starter
-  py3 starter.start()
+python3 << EOF
+# from amt import start
+import amt.start
+amt.start.start_amt()
+EOF
 else
   call vlegacy#starter#start()
 endif

@@ -77,7 +77,7 @@ function! StartAMTDashboard() " {{{
   endwhile
   " }}}
   " Center the dashboard {{{
-  exe 'normal \%center'
+  " exe 'normal \%center'
   %center
   " No modifications to this buffer
   setlocal nomodifiable nomodified

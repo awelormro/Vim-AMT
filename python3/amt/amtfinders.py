@@ -1,6 +1,7 @@
 import vim
 
 
+# Start core
 def start():
     AMT_Finders_commands()
     AMT_Finders_mappings()
@@ -15,7 +16,7 @@ def AMT_Finders_mappings():
 
 
 def amt_open_buffer(all_values, title):
-    """
+    """ 
     open the buffer with all the specifications and generate the mappings
     b:search_values: values in current search status
     b:main values: list of all values in search mode
@@ -148,17 +149,23 @@ def AMT_Oldfiles():
     vc = vim.command
     vim.current.buffer.vars["updating_line1"] = ""
     amt_open_buffer(vim.vvars['oldfiles'], "Search: ")
-    vc("command! -buffer AMTCursorUp py3 amtfinders.amt_cursor_up()")
-    vc("command! -buffer AMTCursorDown py3 amtfinders.amt_cursor_down()")
-    vc("command! -buffer AMTExecute py3 amtfinders.amt_execute(['e ', ''])")
-    vc("command! -buffer AMTReloadSearch py3 amtfinders.amt_reload_search()")
-    vc("inoremap <buffer><expr> <Backspace> col('.') > 9 && line('.') == 1 ? '<Backspace>' : ''")
-    vc("inoremap <buffer><expr> <Left> col('.') > 9 ? '<Left>' : ''")
-    vc("inoremap <buffer><expr> <Del> col('.') != col('$') && line('.') == 1 && col('.') > 9 ? '<Del>' : ''")
-    vc("nnoremap <buffer> q :q!<CR>")
-    vc("nnoremap <buffer><silent> <Up> :AMTCursorUp<CR>")
-    vc("nnoremap <buffer><silent> <Down> :AMTCursorDown<CR>")
-    vc("nnoremap <buffer><silent> k :AMTCursorUp<CR>")
-    vc("nnoremap <buffer><silent> j :AMTCursorDown<CR>")
-    vc("nnoremap <buffer><silent> <CR> :AMTExecute<CR>")
-    vc("autocmd TextChangedI *.amtsearch if line('.') == 1 && b:updating_line1 != getline(1) | execute 'AMTReloadSearch' | endif")
+    a1 = 'command! -buffer '
+    a2 = 'inoremap <buffer>'
+    a3 = 'nnoremap <buffer>'
+    vc(a1 + "AMTCursorUp py3 amtfinders.amt_cursor_up()")
+    vc(a1 + " AMTCursorDown py3 amtfinders.amt_cursor_down()")
+    vc(a1 + " AMTExecute py3 amtfinders.amt_execute(['e ', ''])")
+    vc(a1 + " AMTReloadSearch py3 amtfinders.amt_reload_search()")
+    vc(a2 + "<expr> <Backspace> col('.') > 9 && line('.') == 1 ?'" +
+       " '<Backspace>' : ''")
+    vc(a2 + "<expr> <Left> col('.') > 9 ? '<Left>' : ''")
+    vc(a2 + "<expr> <Del> col('.') != col('$') && line('.') == 1 " +
+       " && col('.') > 9 ? '<Del>' : ''")
+    vc(a3 + " q :q!<CR>")
+    vc(a3 + "<silent> <Up> :AMTCursorUp<CR>")
+    vc(a3 + "<silent> <Down> :AMTCursorDown<CR>")
+    vc(a3 + "<silent> k :AMTCursorUp<CR>")
+    vc(a3 + "<silent> j :AMTCursorDown<CR>")
+    vc(a3 + "<silent> <CR> :AMTExecute<CR>")
+    vc("autocmd TextChangedI *.amtsearch if line('.') == 1 &&" +
+       " b:updating_line1 != getline(1) | execute 'AMTReloadSearch' | endif")
