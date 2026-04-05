@@ -49,7 +49,7 @@ def amt_pairing_brackets(key: str):
     elif auxchar == 27:
         str_char = '\\<Esc>'
     elif auxchar == 32:
-        str_char = '\\<Space>\\<Space>\\<Left>\\<Left>'
+        str_char = '\\<Space>\\<Space>\\<Left>'
     else:
         str_char = vim.Function('nr2char')(auxchar).decode('utf-8')
     if str_char == '"':
@@ -60,7 +60,8 @@ def amt_pairing_brackets(key: str):
         vim.command("call feedkeys(\"'\")")
         vim.vars['object_realized'] = 1
         return
-    vim.command('call feedkeys("' + str_char + '\\<Right>")')
+    # vim.command('call feedkeys("' + str_char + '\\<Right>")')
+    vim.command('call feedkeys("' + str_char + '")')
     vim.vars['object_realized'] = 0
 
 

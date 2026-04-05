@@ -1,0 +1,448 @@
+* AMT Finders
+
+Es una sección que me permite crear un buffer de 10 líneas al fondo, 
+
+La primer parte es lo que debemos ir armando, no olvidar que existe el candado
+de las primeras partes, 
+
+
+#+BEGIN_SRC vim
+if !has('vim9script')
+  finish
+endif
+vim9script
+import autoload "nerdpickers.vim" as nerdpick
+
+#+END_SRC
+
+** Funciones base del amt_buffer
+
+Ésto no es necesario en python, pero vamos con los comandos principales:
+
+#+BEGIN_SRC vim
+command! AMTOldfiles           AMT_Open_Oldfiles()
+command! AMTColors            AMT_Select_Colorscheme()
+command! AMTBuffers           AMT_Select_Buffer()
+command! AMTNerd              AMT_insert_nerd_glyph()
+command! AMTStartSession      AMT_start_sessions()
+command! AMTDeleteSessions    AMT_delete_sessions()
+command! AMTSaveSession       AMT_save_session()
+command! AMTCloseSession      AMT_Close_session()
+#+END_SRC
+
+El encabezado con los comandos va:
+
+
+#+BEGIN_SRC python :tangle amt_finders.py
+import vim
+import re
+
+#+END_SRC
+
+La generación de los comandos es mediante:
+
+#+BEGIN_SRC python :tangle amt_finders.py
+vim.command('command! AMTOldfiles           AMT_Open_Oldfiles()')
+vim.command('command! AMTColors            AMT_Select_Colorscheme()')
+vim.command('command! AMTBuffers           AMT_Select_Buffer()')
+vim.command('command! AMTNerd              AMT_insert_nerd_glyph()')
+vim.command('command! AMTStartSession      AMT_start_sessions()')
+vim.command('command! AMTDeleteSessions    AMT_delete_sessions()')
+vim.command('command! AMTSaveSession       AMT_save_session()')
+vim.command('command! AMTCloseSession      AMT_Close_session()')
+#+END_SRC
+
+Se comienza con la función del cursor arriba:
+
+#+BEGIN_SRC python :tangle amt_finders.py
+def AMT_Cursor_Up():
+    import vim
+    idx_search = vim.Function('search')('->', 'n')
+    vcb = vim.current.buffer
+    vcbv = vim.current.buffer.vars
+    counter = vim.current.buffer.vars['counter']
+    change_vals = vim.current.buffer.vars['change_values']
+    search_values = vim.current.buffer.vars['search_values']
+    if idx_search == 2:
+        if counter == 1 and change_vals == 1:
+            vim.command(':2,11delete')
+            vcbv['counter'] = len(vcbv['search_values'])
+            vcb.append(1, vcbv['search_values'][-1])
+            vcb[1] = '->' + vcb[1]
+            vim.current.window.cursor = (0, 100)
+            return
+        if vim.Function('line')('$') < 11:
+            vcbv['counter'] -= 1
+            vcb.append(1, vcbv['search_values'][counter - 1])
+            vcb[1] = '->' + vim.current.buffer[1]
+            vim.current.window.cursor = (0, 100)
+            return
+        vcbv['counter'] = counter - 1
+        vcb.append(1, vcbv['search_values'][counter - 1])
+        vcb[1] = vcb[1]
+#+END_SRC
+
+
+
+#+BEGIN_SRC python :tangle amt_finds.py
+# amtutils.py - Python translation of amtutilsvim1.vim
+import vim
+import os
+from pathlib import Path
+
+# ----------------------------------------------------------------------
+# Global settings (mirror g:amt_session_folder)
+# ----------------------------------------------------------------------
+def _ensure_session_folder():
+    if int(vim.eval("exists('g:amt_session_folder')")) == 0:
+        vim.command("let g:amt_session_folder = '~/sessions'")
+    folder = vim.eval("g:amt_session_folder")
+    if not folder.endswith('/'):
+        folder += '/'
+        vim.command(f"let g:amt_session_folder = '{folder}'")
+    return folder
+
+# ----------------------------------------------------------------------
+# Nerd Font glyphs (load from global variable, fallback to dummy)
+# ----------------------------------------------------------------------
+def _load_nerd_glyphs():
+    if int(vim.eval("exists('g:main_fonts')")):
+        fonts = vim.eval("g:main_fonts")
+        keys = list(fonts.keys())
+        symbols = [fonts[k]['char'] for k in keys]
+        display = [f"{fonts[k]['char']} : {k}" for k in keys]
+        vim.vars['amt_nerdfonts_keys'] = keys
+        vim.vars['amt_symbols'] = symbols
+        vim.vars['amt_nerd_display'] = display
+    else:
+        # Fallback dummy data if g:main_fonts is not defined
+        vim.vars['amt_nerdfonts_keys'] = []
+        vim.vars['amt_symbols'] = []
+        vim.vars['amt_nerd_display'] = []
+
+# ----------------------------------------------------------------------
+# Core picker functions
+# ----------------------------------------------------------------------
+def _open_browser(list_values, first_line, action, insert_mode=False):
+    """Create the search.amtsearch buffer and set up state."""
+    # Remember splitbelow setting
+    split_below = int(vim.eval('&splitbelow'))
+    if not split_below:
+        vim.command('set splitbelow')
+    vim.command('11new')
+    vim.command('e search.amtsearch')
+    if not split_below:
+        vim.command('set nosplitbelow')
+
+    # Buffer settings
+    vim.command('setlocal filetype=amtsearch modifiable nonumber norelativenumber buftype=nofile bufhidden=wipe noswapfile nospell')
+    buf = vim.current.buffer
+    buf[0] = first_line
+
+    # Store state in buffer variables
+    buf.vars['main_values'] = list_values
+    buf.vars['search_values'] = list_values[:]
+    buf.vars['change_values'] = 1 if len(list_values) > 10 else 0
+    initial = list_values[:10] if buf.vars['change_values'] else list_values
+    # Insert the list after line 1
+    for i, line in enumerate(initial, start=2):
+        if i - 2 < len(initial):
+            buf.append(line, i-1)
+    buf.vars['counter'] = 1
+    # Place the '->' marker on line 2
+    if len(buf) >= 2:
+        buf[1] = '->' + buf[1]
+    vim.current.window.cursor = (1, len(buf[0]) if buf[0] else 0)
+
+    # Set up buffer-local commands and mappings
+    vim.command(f'command! -buffer AMTCursorUp call py3eval("_cursor_up()")')
+    vim.command(f'command! -buffer AMTCursorDown call py3eval("_cursor_down()")')
+    vim.command(f'command! -buffer AMTExecute call py3eval("_execute(\'{action}\')")')
+    vim.command(f'command! -buffer AMTChangesearch call py3eval("_change_search(9)")')
+
+    # Mappings
+    vim.command('inoremap <buffer><expr> <Backspace> col(".") > 9 && line(".") == 1 ? "<Backspace>" : ""')
+    vim.command('inoremap <buffer><expr> <Left> col(".") > 9 ? "<Left>" : ""')
+    vim.command('inoremap <buffer><expr> <Del> col(".") != col("$") && line(".") == 1 && col(".") > 9 ? "<Del>" : ""')
+    vim.command('nnoremap <buffer> q :q!<CR>')
+    vim.command('inoremap <buffer> <C-q> <Esc>:q!<CR>')
+    vim.command('inoremap <buffer> <Up> <Esc>:AMTCursorUp<CR>:echo " "<CR>A')
+    vim.command('inoremap <buffer> <Down> <Esc>:AMTCursorDown<CR>:echo " "<CR>A')
+    vim.command('nnoremap <buffer> <Up> :AMTCursorUp<CR>:echo " "<CR>A')
+    vim.command('nnoremap <buffer> <Down> :AMTCursorDown<CR>:echo " "<CR>$')
+    vim.command('nnoremap <buffer> <CR> :AMTExecute<CR>:echo " "<CR>')
+    vim.command('inoremap <buffer> <CR> <Esc>:AMTExecute<CR>:echo " "<CR>')
+
+    # Autocommand for filtering
+    vim.command('augroup AMTPicker')
+    vim.command('autocmd!')
+    vim.command('autocmd TextChangedI *.amtsearch if line(".") == 1 | AMTChangesearch | endif')
+    vim.command('augroup END')
+
+    # Store that we are in picker mode (for insert mode special handling)
+    buf.vars['updating_line1'] = ''
+
+def _cursor_up():
+    buf = vim.current.buffer
+    if 'counter' not in buf.vars:
+        return
+    idx = _find_marker_line()
+    if idx == 2 and buf.vars.get('counter', 0) == 1 and buf.vars.get('change_values', 0) == 1:
+        vim.command('2,11delete')
+        buf.vars['counter'] = len(buf.vars['search_values'])
+        buf.append(buf.vars['search_values'][-1], 1)
+        buf[1] = '->' + buf[1]
+        vim.current.window.cursor = (1, vim.current.window.cursor[1])
+        return
+    if idx == 2 and buf.vars.get('change_values', 0) == 0:
+        buf.vars['counter'] = len(buf.vars['search_values'])
+        buf[1] = buf[1][2:]
+        buf[-1] = '->' + buf[-1]
+        vim.current.window.cursor = (1, vim.current.window.cursor[1])
+        return
+    if idx == 2 and len(buf) < 11:
+        buf.vars['counter'] -= 1
+        buf.append(buf.vars['search_values'][buf.vars['counter'] - 1], 1)
+        buf[1] = '->' + buf[1]
+        buf[2] = buf[2][2:]
+        vim.current.window.cursor = (1, vim.current.window.cursor[1])
+        return
+    if idx == 2:
+        buf.vars['counter'] -= 1
+        buf.append(buf.vars['search_values'][buf.vars['counter'] - 1], 1)
+        buf[1] = '->' + buf[1]
+        buf[2] = buf[2][2:]
+        vim.current.window.cursor = (1, vim.current.window.cursor[1])
+        return
+    # General case
+    buf[idx-2] = '->' + buf[idx-2]
+    buf[idx-1] = buf[idx-1][2:]
+    buf.vars['counter'] -= 1
+    vim.current.window.cursor = (1, vim.current.window.cursor[1])
+
+def _cursor_down():
+    buf = vim.current.buffer
+    if 'counter' not in buf.vars:
+        return
+    idx = _find_marker_line()
+    if len(buf.vars['search_values']) == buf.vars['counter'] and buf.vars.get('change_values', 0) == 0:
+        buf[1] = '->' + buf[1]
+        buf[-1] = buf[-1][2:]
+        buf.vars['counter'] = 1
+        vim.current.window.cursor = (1, len(buf[0]) if buf[0] else 0)
+        return
+    if idx == 11 and buf.vars.get('change_values', 0) == 1:
+        vim.command('2delete')
+        buf.append(buf.vars['search_values'][buf.vars['counter'] - 1], 10)
+        buf[10] = '->' + buf[10]
+        buf[9] = buf[9][2:]
+        buf.vars['counter'] += 1
+        vim.current.window.cursor = (1, len(buf[0]) if buf[0] else 0)
+        return
+    if len(buf) <= 10 and idx == len(buf) and len(buf.vars['search_values']) < 10:
+        buf.vars['counter'] = 1
+        buf[1] = '->' + buf[1]
+        buf[-1] = buf[-1][2:]
+        vim.current.window.cursor = (1, len(buf[0]) if buf[0] else 0)
+        return
+    if len(buf) <= 10 and idx == len(buf):
+        buf.vars['counter'] = 1
+        vim.command('2,$delete')
+        for i, val in enumerate(buf.vars['search_values'][:10], start=1):
+            buf.append(val, i)
+        buf[1] = '->' + buf[1]
+        vim.current.window.cursor = (1, len(buf[0]) if buf[0] else 0)
+        return
+    buf[idx] = '->' + buf[idx]
+    buf[idx-1] = buf[idx-1][2:]
+    buf.vars['counter'] += 1
+    vim.current.window.cursor = (1, vim.current.window.cursor[1])
+
+def _find_marker_line():
+    for i, line in enumerate(vim.current.buffer, start=1):
+        if line.startswith('->'):
+            return i
+    return 2  # fallback
+
+def _change_search(len_ignore):
+    buf = vim.current.buffer
+    if buf.vars.get('updating_line1') == buf[0]:
+        return
+    buf.vars['updating_line1'] = buf[0]
+    line_result = buf[0][len_ignore:]
+    vim.command('silent! :2,$delete _')
+    if len(line_result.strip()) == 0:
+        buf.vars['search_values'] = buf.vars['main_values'][:]
+        buf.vars['change_values'] = 1 if len(buf.vars['search_values']) > 10 else 0
+        new_list = buf.vars['search_values'][:10] if buf.vars['change_values'] else buf.vars['search_values']
+        buf.vars['counter'] = 1
+        for i, val in enumerate(new_list, start=2):
+            if i-2 < len(new_list):
+                buf.append(val, i-1)
+        if len(buf) >= 2:
+            buf[1] = '->' + buf[1]
+        vim.current.window.cursor = (1, len(buf[0]) if buf[0] else 0)
+        return
+    # Use Vim's matchfuzzy for consistency
+    # Escape the search string for Vim expression
+    escaped = line_result.replace("'", "''")
+    expr = f"matchfuzzy(copy({repr(buf.vars['main_values'])}), '{escaped}', {{'limit': 200}})"
+    result = vim.eval(expr)
+    buf.vars['search_values'] = result
+    buf.vars['change_values'] = 1 if len(result) > 10 else 0
+    new_list = result[:10] if buf.vars['change_values'] else result
+    buf.vars['counter'] = 1
+    for i, val in enumerate(new_list, start=2):
+        if i-2 < len(new_list):
+            buf.append(val, i-1)
+    if len(buf) >= 2:
+        buf[1] = '->' + buf[1]
+    vim.current.window.cursor = (1, len(buf[0]) if buf[0] else 0)
+
+def _execute(action):
+    marker_line = _find_marker_line()
+    selected = vim.current.buffer[marker_line-1][2:]
+    vim.command('q!')
+    vim.command(f'{action} {selected}')
+
+def _insert_nerd():
+    marker_line = _find_marker_line()
+    raw = vim.current.buffer[marker_line-1][2:]
+    selected = raw.split(':')[0].strip()
+    vim.command('q!')
+    row, col = vim.current.window.cursor
+    line = vim.current.buffer[row-1]
+    if col == 1:
+        new_line = line[0] + selected + line[1:]
+    elif col == len(line):
+        new_line = line + selected
+    else:
+        new_line = line[:col-1] + selected + line[col-1:]
+    vim.current.buffer[row-1] = new_line
+
+# ----------------------------------------------------------------------
+# Public commands
+# ----------------------------------------------------------------------
+def amt_oldfiles():
+    oldfiles = vim.eval('v:oldfiles')
+    _open_browser(oldfiles, 'Search: ', 'e')
+
+def amt_colorscheme():
+    colors = vim.eval('getcompletion("", "color")')
+    _open_browser(colors, 'Search: ', 'colorscheme')
+
+def amt_buffers():
+    buffers = vim.eval('getcompletion("", "buffer")')
+    _open_browser(buffers, 'Search: ', 'b')
+
+def amt_nerd():
+    if 'amt_nerd_display' not in vim.vars:
+        _load_nerd_glyphs()
+    display = vim.vars['amt_nerd_display']
+    _open_browser(display, 'Search: ', '')
+    vim.command('command! -buffer AMTInsertNerd call py3eval("_insert_nerd()")')
+    vim.command('inoremap <buffer> <CR> <Esc>:AMTInsertNerd<CR>:echo " "<CR>')
+    vim.command('nnoremap <buffer> <CR> :AMTInsertNerd<CR>:echo " "<CR>')
+
+def amt_start_sessions():
+    folder = _ensure_session_folder()
+    if not os.path.isdir(os.path.expanduser(folder)):
+        if vim.eval("input('Session folder not created, want to create?\\n y/n')") == 'y':
+            os.makedirs(os.path.expanduser(folder), exist_ok=True)
+    # Get list of .vim files in the folder
+    path = os.path.expanduser(folder)
+    files = [f for f in os.listdir(path) if f.endswith('.vim')]
+    # Prepend "so " to each for completion style? We'll just show filenames
+    _open_browser(files, 'Search: ', '')
+    vim.command('command! -buffer AMTStartSes call py3eval("_other_start_session()")')
+    vim.command('inoremap <buffer> <CR> <Esc>:AMTStartSes<CR>')
+    vim.command('nnoremap <buffer> <CR> :AMTStartSes<CR>')
+
+def _other_start_session():
+    marker = _find_marker_line()
+    session = vim.current.buffer[marker-1][2:]
+    folder = vim.eval('g:amt_session_folder')
+    full = os.path.join(os.path.expanduser(folder), session)
+    vim.command(f'source {full}')
+
+def amt_delete_sessions():
+    folder = _ensure_session_folder()
+    if not os.path.isdir(os.path.expanduser(folder)):
+        if vim.eval("input('Session folder not created, want to create?\\n y/n')") == 'y':
+            os.makedirs(os.path.expanduser(folder), exist_ok=True)
+    files = [f for f in os.listdir(os.path.expanduser(folder)) if f.endswith('.vim')]
+    _open_browser(files, 'Search: ', '')
+    vim.command('command! -buffer AMTDeleteSession call py3eval("_delete_session()")')
+    vim.command('nnoremap <buffer> <CR> :AMTDeleteSession<CR>')
+    vim.command('inoremap <buffer> <CR> <Esc>:AMTDeleteSession<CR>')
+
+def _delete_session():
+    marker = _find_marker_line()
+    file = vim.current.buffer[marker-1][2:]
+    folder = vim.eval('g:amt_session_folder')
+    full = os.path.join(os.path.expanduser(folder), file)
+    try:
+        os.remove(full)
+        print(f"Session {file} deleted")
+    except Exception as e:
+        print(f"Error deleting: {e}")
+    vim.command('call py3eval("_change_search(9)")')
+
+def amt_save_session():
+    folder = _ensure_session_folder()
+    this_session = vim.eval('v:this_session')
+    if not this_session:
+        ans = vim.eval("input('Not a session loaded, Save? (y/n) ')")
+        if ans == 'y':
+            name = vim.eval("input('Session name: ')")
+            cwd = os.getcwd()
+            os.chdir(os.path.expanduser('~'))
+            vim.command(f'mks! {os.path.expanduser(folder)}/{name}')
+            os.chdir(cwd)
+        return
+    # Check if session is already inside the session folder
+    sess_dir = os.path.dirname(this_session)
+    if sess_dir != os.path.expanduser(folder):
+        ans = vim.eval("input('Session not in folder session, Save it? (y/n): ')")
+        if ans == 'y':
+            cwd = os.getcwd()
+            os.chdir(os.path.expanduser('~'))
+            base = os.path.basename(this_session)
+            vim.command(f'mks! {os.path.expanduser(folder)}/{base}')
+            os.chdir(cwd)
+    else:
+        cwd = os.getcwd()
+        os.chdir(os.path.expanduser('~'))
+        vim.command(f'mks! {this_session}')
+        os.chdir(cwd)
+
+def amt_close_session():
+    vim.command("let v:this_session = ''")
+    vim.command('bufdo! bw!')
+    vim.command('AMTDash')   # assuming you have this command defined
+
+def amt_create_session():
+    folder = _ensure_session_folder()
+    name = vim.eval("input('Session name: ')")
+    full = os.path.join(os.path.expanduser(folder), name)
+    vim.command(f'mks! {full}')
+    print(f"Session {full} saved")
+
+# ----------------------------------------------------------------------
+# Command definitions
+# ----------------------------------------------------------------------
+def setup_commands():
+    vim.command('command! AMTOldfiles call py3eval("amt_oldfiles()")')
+    vim.command('command! AMTColors call py3eval("amt_colorscheme()")')
+    vim.command('command! AMTBuffers call py3eval("amt_buffers()")')
+    vim.command('command! AMTNerd call py3eval("amt_nerd()")')
+    vim.command('command! AMTStartSession call py3eval("amt_start_sessions()")')
+    vim.command('command! AMTDeleteSessions call py3eval("amt_delete_sessions()")')
+    vim.command('command! AMTSaveSession call py3eval("amt_save_session()")')
+    vim.command('command! AMTCloseSession call py3eval("amt_close_session()")')
+    vim.command('command! AMTCreateSession call py3eval("amt_create_session()")')
+
+# Auto-run when module is loaded
+setup_commands()
+#+END_SRC
+

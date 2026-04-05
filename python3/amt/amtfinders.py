@@ -16,7 +16,7 @@ def AMT_Finders_mappings():
 
 
 def amt_open_buffer(all_values, title):
-    """ 
+    """
     open the buffer with all the specifications and generate the mappings
     b:search_values: values in current search status
     b:main values: list of all values in search mode
