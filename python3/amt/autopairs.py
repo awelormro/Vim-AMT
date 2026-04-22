@@ -71,17 +71,17 @@ def auto_pair_start():
     a = 'imap { {}<Left><C-o>:py3 ap.amt_pairing_brackets("{")<CR>'
     b = 'imap [ []<Left><C-o>:py3 ap.amt_pairing_brackets("[")<CR>'
     c = 'imap ( ()<Left><C-o>:py3 ap.amt_pairing_brackets("(")<CR>'
-    d = 'imap <expr> ) getline(\'.\')[col(\'.\')-1] == \')\' ? "\\<Right>" : \')\''
-    e = 'imap <expr> ] getline(\'.\')[col(\'.\')-1] == \']\' ? "\\<Right>" : \']\''
-    f = 'imap <expr> } getline(\'.\')[col(\'.\')-1] == \'}\' ? "\\<Right>" : \'}\''
+    # d = 'imap <expr> ) getline(\'.\')[col(\'.\')-1] == \')\' ? "\\<Right>" : \')\''
+    # e = 'imap <expr> ] getline(\'.\')[col(\'.\')-1] == \']\' ? "\\<Right>" : \']\''
+    # f = 'imap <expr> } getline(\'.\')[col(\'.\')-1] == \'}\' ? "\\<Right>" : \'}\''
     g = 'inoremap " ""<Left>'
     h = "inoremap ' ''<Left>"
     vc(a)
     vc(b)
     vc(c)
-    vc(d)
-    vc(e)
-    vc(f)
+    # vc(d)
+    # vc(e)
+    # vc(f)
     vc(g)
     vc(h)
 
@@ -152,30 +152,3 @@ def auto_pair_quote(dquote):
         return '"'
     else:
         return "'"
-
-
-# def auto_pair_start():
-#     vc = vim.command
-#     vc('py3 import amt.autopairs as ap')
-#     a = 'map <silent> '
-#     b = ':py3 ap.'
-#     c = 'imap '
-#     mappings = ['<Plug>amt_autopair_bracket', '<Plug>amt_autopair_sbracket',
-#                 '<Plug>amt_autopair_keysym', '<Plug>amt_autopair_squote',
-#                 '<Plug>amt_autopair_dquote'
-#                 ]
-#     commands = [
-#             'auto_pair_bracket("(", ")", False)', 'auto_pair_bracket("[", "]", False)',
-#             'auto_pair_bracket("{", "}", False)',
-#             'auto_pair_quote(False)', "auto_pair_quote(True)",
-#             ]
-#     plugs = ['(', '[', '{', "'", '"']
-#     i = 0
-#     len_commands = len(commands)
-#     while i < len_commands:
-#         vc(a + ' ' + mappings[i] + ' ' + b + commands[i] + '<CR>')
-#         i += 1
-#     i = 0
-#     while i < len_commands:
-#         vc(c + plugs[i] + ' ' + plugs[i] + '<C-o>' + b + commands[i] + '<CR>')
-#         i += 1

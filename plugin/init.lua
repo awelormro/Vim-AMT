@@ -1,5 +1,4 @@
-
-vim = vim
+local vim = vim
 
 
 if vim.fn.exists("g:amt_core") == 1 then
@@ -14,7 +13,10 @@ if vim.fn.exists("g:amt_started") == 1 then
   return
 end
 
+
 vim.g.amt_started = 1
+require('starter.amtdash').dash_start()
 
 vim.cmd("command AMTLuaConfirm echo 'Greetings from AMT lua'")
-require('starters.start').start()
+local starting = require('starter.start')
+starting.start()

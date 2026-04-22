@@ -11,3 +11,7 @@ inoremap <buffer><silent> <CR> <C-o>:AMTConfirmSelection<CR>
 nnoremap <buffer><silent> <CR> :AMTConfirmSelection<CR>
 nnoremap <buffer><silent> q :q!
 inoremap <buffer><silent> <C-q> <C-o>:q!
+inoremap <buffer><silent> <Tab> <C-o>:AMTCursorUp<CR>
+inoremap <buffer><silent> <S-Tab> <C-o>:AMTCursorDown<CR>
+nnoremap <buffer><silent>  <S-Tab> :AMTCursorUp<CR>
+nnoremap <buffer><silent>  <Tab> :AMTCursorDown<CR>

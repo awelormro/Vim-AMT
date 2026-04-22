@@ -53,6 +53,7 @@ M.gen_map_vim = function(mode, lhs, rhs, opts)
   return a .. ' ' .. b ' ' .. ' ' .. c .. ' ' .. d
 end
 
+
 M.gen_user_command = function(name, command, opts)
   if is_nvim then
     vim.api.nvim_create_user_command(name, command, opts)
@@ -70,7 +71,7 @@ M.gen_command_vim = function(name, command, opts)
   if opts['bar'] then
     a = a .. ' -bar'
   end
-  return 'command! ' .. name .. ' '.. a .. ' ' .. command 
+  return 'command! ' .. name .. ' '.. a .. ' ' .. command
 end
 
 M.gen_autocmd_vim = function(event, opts)

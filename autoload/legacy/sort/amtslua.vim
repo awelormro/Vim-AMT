@@ -13,6 +13,7 @@ lua << EOF
 require('starter.start').starter()
 EOF
 elseif g:amt_core == "python"
+let g:amt_json_nerdpicker_file_root = expand("<sfile>:h:p")
 python3 << EOF
 # from amt import start
 import amt.start

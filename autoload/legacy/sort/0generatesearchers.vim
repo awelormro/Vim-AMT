@@ -157,7 +157,8 @@ def AMT_Open_browser(list_values: list<any>, first_line: string) # {{{
   append(1, list_values_append)
   cursor(1, col('$'))
   setline(2, '->' .. getline(2))
-enddef # }}}
+enddef
+# }}}
 def AMT_Change_Search(len_ignore: number) # {{{
   #  Verify if first line is different from the flag {{{
   if b:updating_line1 == getline(1)

@@ -8,4 +8,7 @@ function M.first_function()
   vim.g.amt_variable_generated = true
 end
 
+function M.start()
+  print('start AMT in Lua')
+end
 return M

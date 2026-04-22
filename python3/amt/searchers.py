@@ -1,5 +1,6 @@
 # searchers for vim. Helps to make the main filter file
 import vim
+import ast
 
 
 # --------------------------------------------
@@ -63,7 +64,8 @@ def _first_row_up() -> None:
         del vim.current.buffer[1:]
         vim.current.buffer.vars['counter'] = len_total_data - 1
         new_pos = vim.current.buffer.vars['counter']
-        new_line = '->' + vim.current.buffer.vars['total_data'][new_pos].decode('utf-8')
+        new_line = '->' + vim.current.buffer.vars['total_data'][
+                new_pos].decode('utf-8')
         vim.current.buffer.append(new_line)
         vim.current.buffer.vars['finished_search'] = 1
         return
@@ -117,8 +119,12 @@ def _last_row_down() -> None:
             vim.current.buffer.vars['counter'] = 0
             vim.current.buffer.vars['finished_search'] = 1
             return
+    del vim.current.buffer[1]
     vim.current.buffer[-1] = vim.current.buffer[-1][2:]
     vim.current.buffer.vars['counter'] += 1
+    count = vim.current.buffer.vars['counter']
+    new_append = '->' + vim.current.buffer.vars['total_data'][count].decode('utf-8')
+    vim.current.buffer.append(new_append)
     vim.current.buffer.vars['finished_search'] = 1
     return
 
@@ -174,7 +180,7 @@ def amt_cursor_down() -> None:
 
 def amt_reload_search() -> None:
     # total_data será de donde se llena el buffer
-    # search_data es donde se deposita toda la data para buscar con el matchfuzzy
+    # search_data es donde se pone toda la dato para buscar con el matchfuzzy
     word_start = 'search: '
     search_value = vim.current.buffer[0][len(word_start):].strip()
     if search_value != vim.eval('b:search_value'):
@@ -187,13 +193,13 @@ def amt_reload_search() -> None:
         del vim.current.buffer[1:]
         vim.current.buffer.vars['counter'] = 0
         vim.current.buffer.vars['search_data'] = search_value
+        if len(fuzzy_search) == 0:
+            print('empty list')
+            return
         if len(fuzzy_search) <= 10:
             vim.current.buffer.append(fuzzy_search)
         else:
             vim.current.buffer.append(fuzzy_search[:10])
-        if len(fuzzy_search) == 0:
-            print('empty list')
-            return
         vim.current.buffer.vars['search_data'] = fuzzy_search
         vim.current.buffer[1] = '->' + vim.current.buffer[1]
         vim.current.window.cursor = [1, len(vim.current.buffer[0])]
@@ -234,6 +240,49 @@ def start_amt_searching() -> None:
 
 
 # --------------------------------------------
+# Nerdfont glyph picker
+# --------------------------------------------
+def _insert_in_buffer(glyph: str) -> None:
+    cur_pos = vim.current.window.cursor[1]
+    cur_line = vim.current.line
+    if cur_pos == len(vim.current.line):
+        vim.current.line = vim.current.line + glyph
+        return
+    if cur_pos == 0:
+        vim.current.line = glyph + vim.current.line
+        return
+    vim.current.line = vim.current.line[:cur_pos] +\
+        glyph + vim.current.line[cur_pos:]
+
+
+def amt_nerd_glyph_picker() -> None:
+    search_match = vim.Function('search')('^->', 'n') - 1
+    glyph_selection = vim.current.buffer[search_match][2]
+    _insert_in_buffer(glyph_selection)
+    pass
+
+
+def _generate_simple_info_glyph(header_hard, header_simple_txt) -> None:
+    import json
+    # Leer JSON original usando la librería json de Python
+    with open(header_hard, 'r', encoding='utf-8') as f:
+        glyph_list = json.load(f)
+
+    print(type(glyph_list))
+    # Generar lista simple: cada elemento es "glifo-descripcion"
+
+
+def _generate_glyphs_nerd() -> None:
+    vim.command('call ObtainNerdFile()')
+
+
+def amt_nerd() -> None:
+    _generate_glyphs_nerd()
+    vim.command('command! -buffer AMTConfirmSelection call Write_nerd_glyph()')
+    pass
+
+
+# --------------------------------------------
 # Session aux functions
 # --------------------------------------------
 def _read_sessions() -> list:
@@ -263,6 +312,15 @@ def verify_session_exists() -> list:
     return aviable_sessions
 
 
+def amt_open_session() -> None:
+    pos_search = vim.Function('search')('^->') - 1
+    cont_string = vim.current.buffer[pos_search][2:]
+    # vim.command('bw!')
+    vim.command('q!')
+    session_path = vim.eval('g:amt_sessions_dir')
+    vim.command(f'so {session_path}/{cont_string}')
+
+
 # --------------------------------------------
 # Session management commands
 # --------------------------------------------
@@ -272,15 +330,6 @@ def amt_session_choose_open() -> None:
     p2 = '\")'
     amt_generate_buffer(amt_sessions, p1, p2)
     vim.command('command! -buffer AMTConfirmSelection py3 srch.amt_open_session()')
-
-
-def amt_open_session() -> None:
-    pos_search = vim.Function('search')('^->') - 1
-    cont_string = vim.current.buffer[pos_search][2:]
-    # vim.command('bw!')
-    vim.command('q!')
-    session_path = vim.eval('g:amt_sessions_dir')
-    vim.command(f'so {session_path}/{cont_string}')
 
 
 def amt_close_session() -> None:
